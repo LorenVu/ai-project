@@ -1,0 +1,88 @@
+services:
+  #proxy section
+  nginx:
+    container_name: nginx-ai
+    ports:
+      - "8080:80"
+    depends_on:
+      - ai.project
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+
+  #database section
+  
+  #postgresql
+  postgresql:
+    container_name: postgres-ai
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin1234
+      - POSTGRES_DB=ai-project
+    restart: always
+    ports:
+      - "5433:5342"
+
+  #mongodb
+  mongo:
+    container_name: mongo-ai
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  #rabbitmq
+  rabbitmq:
+    container_name: rabbitmq-ai
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  portainer:
+    container_name: portainer-ai
+    restart: always
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+  
+  elasticsearch:
+    container_name: elasticsearch-ai
+    environment:
+      - xpack.monitoring.enabled=true
+      - xpack.watcher.enabled=false
+      - xpack.security.enabled=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - discovery.type=single-node
+#     - ELASTIC_USERNAME=elastic #default
+      - ELASTIC_PASSWORD=admin
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/urs/share/elasticsearch/data
+    
+  kibana:
+    container_name: kibana-ai
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=admin
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5601:5601"
+
+
+  #app sections
+  ai.project:
+    container_name: ai.project
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+    ports:
+      - "5001:80"
+    depends_on:
+      - postgresql
+    restart: always
